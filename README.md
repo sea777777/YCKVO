@@ -1,5 +1,8 @@
 # YCKVO
 
+## 这是什么？ What is this ?
+  类似系统的 KVO, 但是系统的 KVO 使用苛刻，不能多移除，不能不移除，不能多次添加，回调方式不好，等等。 而 YCKVO 不存在以上所有问题。
+
 ## 注意事项：Notice
   1、允许多次添加监听，大胆的添加就是了，但只有最后一次监听才生效。   不需要移除监听，不用费那个劲，底层都帮你处理好了，干就得了。 
   Allow add observer any times, don't need to remove observer.
