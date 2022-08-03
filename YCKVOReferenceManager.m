@@ -7,6 +7,15 @@
 #import "YCKVOReferenceManager.h"
 #import <objc/runtime.h>
 
+typedef void (^doBlock)(void);
+
+static void cleanupBlock (__strong doBlock *block) {
+    (*block)();
+}
+
+#define finalExe(finalBlock) \
+__strong void(^placeHolderBlock)(void) __attribute__((cleanup(cleanupBlock),unused)) = finalBlock;
+
 
 @interface YCKVOReferenceManager()
 @property (nonatomic, strong) NSMutableDictionary* referenceCache;
@@ -28,15 +37,22 @@
     if (obj == nil || obj.length == 0) return;
     
     [self.lock lock];
+    finalExe(^{
+        [self.lock unlock];
+    });
+    
     NSNumber *count = [self.referenceCache objectForKey:obj];
     [self.referenceCache setObject:@((count ? [count integerValue] : 0) + 1) forKey:obj];
-    [self.lock unlock];
+    
 }
 
 - (void)removeObserverObject:(NSString *)obj {
     if (obj == nil) return;
     
     [self.lock lock];
+    finalExe(^{
+        [self.lock unlock];
+    });
     NSNumber *countNum = [self.referenceCache objectForKey:obj];
     NSInteger count = [countNum integerValue];
     if (count > 1) {
@@ -45,11 +61,12 @@
         [self.referenceCache removeObjectForKey:obj];
         [self destroy:obj];
     }
-    [self.lock unlock];
 }
 
 - (void)destroy:(NSString *)obj {
-    objc_disposeClassPair(NSClassFromString(obj));
+    if (NSClassFromString(obj)) {
+        objc_disposeClassPair(NSClassFromString(obj));
+    }
 }
 
 - (NSMutableDictionary *)referenceCache {
